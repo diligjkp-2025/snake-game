@@ -4,6 +4,7 @@ import { useState, useEffect, useCallback, useRef } from 'react'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent } from '@/components/ui/card'
 
+import { sdk } from '@farcaster/miniapp-sdk'
 // Game types
 interface Position {
   x: number
@@ -17,12 +18,7 @@ interface GameStats {
   isPaused: boolean
 }
 
-interface TouchControls {
-  up: boolean
-  down: boolean
-  left: boolean
-  right: boolean
-}
+
 
 const GRID_SIZE = 20
 const CANVAS_WIDTH = 400
@@ -33,6 +29,38 @@ const MAX_APPLES = 10
 const GAME_SPEED = 150
 
 export default function SnakeAdventure(): JSX.Element {
+  useEffect(() => {
+    const initializeFarcaster = async () => {
+      try {
+        await new Promise(resolve => setTimeout(resolve, 100))
+        
+        if (document.readyState !== 'complete') {
+          await new Promise(resolve => {
+            if (document.readyState === 'complete') {
+              resolve(void 0)
+            } else {
+              window.addEventListener('load', () => resolve(void 0), { once: true })
+            }
+          })
+        }
+        
+        await sdk.actions.ready()
+        console.log('Farcaster SDK initialized successfully - app fully loaded')
+      } catch (error) {
+        console.error('Failed to initialize Farcaster SDK:', error)
+        setTimeout(async () => {
+          try {
+            await sdk.actions.ready()
+            console.log('Farcaster SDK initialized on retry')
+          } catch (retryError) {
+            console.error('Farcaster SDK retry failed:', retryError)
+          }
+        }, 1000)
+      }
+    }
+
+    initializeFarcaster()
+  }, [])
   // Game state
   const [snake, setSnake] = useState<Position[]>(INITIAL_SNAKE)
   const [direction, setDirection] = useState<Position>(INITIAL_DIRECTION)
@@ -46,12 +74,7 @@ export default function SnakeAdventure(): JSX.Element {
   const [gameStarted, setGameStarted] = useState<boolean>(false)
   const [showControls, setShowControls] = useState<boolean>(true)
   const [isMobile, setIsMobile] = useState<boolean>(false)
-  const [touchControls, setTouchControls] = useState<TouchControls>({
-    up: false,
-    down: false,
-    left: false,
-    right: false
-  })
+
 
   // Refs
   const canvasRef = useRef<HTMLCanvasElement>(null)
